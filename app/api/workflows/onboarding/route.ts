@@ -8,6 +8,7 @@ type UserState = "non-active" | "active";
 
 type InitialData = {
   email: string;
+  fullName: string;
 };
 
 const ONE_DAY_IN_MS = 60 * 60 * 24 * 1000;
@@ -23,9 +24,9 @@ const getUserState = async (email: string): Promise<UserState> => {
 
   if (user.length === 0) return "non-active";
 
-  const lastActivityDate = new Date(user[0].lastActivityDate!);
+  const lastActiveDate = new Date(user[0].lastActiveDate!);
   const now = new Date();
-  const timeDifference = now.getTime() - lastActivityDate.getTime();
+  const timeDifference = now.getTime() - lastActiveDate.getTime();
 
   if (
     timeDifference > THREE_DAYS_IN_MS &&
