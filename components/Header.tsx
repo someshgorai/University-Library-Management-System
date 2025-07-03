@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Session } from "next-auth";
-import { bgBlue } from "next/dist/lib/picocolors";
 
 const Header = ({ session }: { session: Session }) => {
   const pathname = usePathname();

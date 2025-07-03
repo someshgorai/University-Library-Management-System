@@ -6,6 +6,7 @@ import {
   ImageKitServerError,
   ImageKitUploadNetworkError,
   upload,
+  Video,
 } from "@imagekit/next";
 import { ChangeEvent, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -15,13 +16,20 @@ import { Image as IKImage } from "@imagekit/next";
 import config from "@/lib/config";
 
 interface Props {
-  fileType: "image";
+  fileType: "image" | "video";
   accept: string;
   placeholder: string;
   folder: string;
-  variant: "dark";
+  variant: "dark" | "light";
   onFileChange: (filePath: string) => void;
   value?: string;
+}
+
+interface AuthParams {
+  signature: string;
+  expire: number;
+  token: string;
+  publicKey: string;
 }
 
 const FileUpload = ({
@@ -49,15 +57,22 @@ const FileUpload = ({
   };
 
   const validateFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith(`${fileType}/`)) {
       toast.error("Invalid file type", {
-        description: "Only image files are allowed.",
+        description: `Only ${fileType} files are allowed.`,
       });
       return false;
     }
     if (fileType === "image" && file.size > 20 * 1024 * 1024) {
       toast.error("File size too large", {
         description: "Please upload a file less than 20MB in size",
+      });
+      return false;
+    }
+
+    if (fileType === "video" && file.size > 100 * 1024 * 1024) {
+      toast.error("File size too large", {
+        description: "Please upload a file less than 100MB in size",
       });
       return false;
     }
@@ -84,6 +99,8 @@ const FileUpload = ({
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset the input value so same file can be reselected
+    e.target.value = "";
     if (!file) {
       toast.error("No file selected", {
         description: "Please select a file to upload",
@@ -93,7 +110,7 @@ const FileUpload = ({
 
     if (!validateFile(file)) return;
 
-    let authParams;
+    let authParams: AuthParams;
     try {
       authParams = await authenticator();
     } catch (authError) {
@@ -106,7 +123,7 @@ const FileUpload = ({
     const { signature, expire, token, publicKey } = authParams;
 
     try {
-      const { url, filePath } = await upload({
+      const { filePath } = await upload({
         file,
         fileName: file.name,
         token,
@@ -152,8 +169,6 @@ const FileUpload = ({
     }
   };
 
-  // @ts-ignore
-  // @ts-ignore
   return (
     <>
       {/* Hidden File Input */}
@@ -195,7 +210,7 @@ const FileUpload = ({
         )}
 
         {progress > 0 && progress < 100 && (
-          <p className="text-sm text-gray-600 mt-2 text-center">
+          <p className="text-sm text-blue-100 mt-2 text-center">
             Uploading: {progress.toFixed(0)}%
           </p>
         )}
@@ -208,14 +223,23 @@ const FileUpload = ({
 
         {uploadedFilePath && (
           <div className="mt-4 flex justify-center">
-            <IKImage
-              urlEndpoint={urlEndpoint}
-              src={uploadedFilePath}
-              width={500}
-              height={300}
-              alt="Uploaded Image"
-              className="rounded-lg shadow-md"
-            />
+            {fileType === "video" ? (
+              <Video
+                urlEndpoint={urlEndpoint}
+                src={uploadedFilePath}
+                controls={true}
+                className="h-96 w-full rounded-xl"
+              />
+            ) : (
+              <IKImage
+                urlEndpoint={urlEndpoint}
+                src={uploadedFilePath}
+                width={500}
+                height={300}
+                alt="Uploaded Image"
+                className="rounded-lg shadow-md"
+              />
+            )}
           </div>
         )}
       </div>

@@ -33,8 +33,6 @@ export const signInWithCredentials = async (
     }
 
     return { success: true };
-    // Todo: Add OTP based Authentication System with Rate limit ( add in client side)
-    // Todo: Check for invalid credentials
   } catch (error) {
     console.error("Error while signing-in user:", error);
     return { success: false, error: "Error while signing-in user" };
@@ -42,7 +40,7 @@ export const signInWithCredentials = async (
 };
 
 export const signUp = async (params: AuthCredentials) => {
-  const { fullName, email, universityId, password, universityCard } = params;
+  const { fullName, universityId } = params;
 
   const ip = (await headers()).get("x-forwarded-for") || "127.0.0.1";
   const { success } = await ratelimit.limit(ip);
@@ -63,14 +61,37 @@ export const signUp = async (params: AuthCredentials) => {
   const lowerUniversityId = universityId.toLowerCase();
   const officialEmailId = `${lowerUniversityId}@nitjsr.ac.in`;
 
-  // Add OTP-based Authentication via officialEmailId
+  const reason = "sign-up";
 
-  const hashedPassword = await hash(
-    password,
-    Number(process.env.PASSWORD_SALT_ROUNDS!),
-  );
+  // Add OTP-based Authentication via officialEmailId
+  try {
+    // Generate OTP + send email via workflow
+    await workflowClient.trigger({
+      url: `${config.env.prodApiEndpoint}/api/workflows/send-otp`,
+      body: { email: officialEmailId, fullName, reason },
+    });
+
+    return {
+      success: true,
+      otpSent: true,
+      email: officialEmailId,
+    };
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    return { success: false, error: "Failed to send OTP" };
+  }
+};
+// ✅ Complete sign-up after OTP is verified
+export const completeSignUp = async (params: AuthCredentials) => {
+  const { fullName, universityId, password, universityCard } = params;
+  const officialEmailId = `${universityId.toLowerCase()}@nitjsr.ac.in`;
 
   try {
+    const hashedPassword = await hash(
+      password,
+      Number(process.env.PASSWORD_SALT_ROUNDS!),
+    );
+
     await db.insert(users).values({
       fullName,
       email: officialEmailId,
@@ -81,16 +102,14 @@ export const signUp = async (params: AuthCredentials) => {
 
     await workflowClient.trigger({
       url: `${config.env.prodApiEndpoint}/api/workflows/onboarding`,
-      body: {
-        email: officialEmailId,
-        fullName,
-      },
+      body: { email: officialEmailId, fullName },
     });
 
     await signInWithCredentials({ universityId, password });
+
     return { success: true };
   } catch (error) {
-    console.error("Error while signing-up user:", error);
-    return { success: false, error: "Error while signing-up user" };
+    console.error("Error completing sign-up:", error);
+    return { success: false, error: "Sign-up failed" };
   }
 };

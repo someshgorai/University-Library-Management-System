@@ -3,7 +3,7 @@
 import React from "react";
 import { signUpSchema } from "@/lib/validations";
 import AuthForm from "@/components/AuthForm";
-import { signUp } from "@/lib/actions/auth";
+import { completeSignUp, signUp } from "@/lib/actions/auth";
 
 const Page = () => {
   return (
@@ -11,13 +11,13 @@ const Page = () => {
       type="SIGN_UP"
       schema={signUpSchema}
       defaultValues={{
-        email: "",
-        password: "",
         fullName: "",
         universityId: "",
+        password: "",
         universityCard: "",
       }}
       onSubmit={signUp}
+      onComplete={completeSignUp}
     />
   );
 };

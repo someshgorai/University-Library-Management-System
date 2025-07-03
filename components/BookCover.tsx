@@ -1,9 +1,10 @@
 "use client";
+
 import React from "react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import BookCoverSvg from "@/components/BookCoverSvg";
-
+import { Image as IKImage } from "@imagekit/next";
+import config from "@/lib/config";
 type BookCoverVariant = "extraSmall" | "small" | "medium" | "regular" | "wide";
 
 const variantStyles: Record<BookCoverVariant, string> = {
@@ -27,6 +28,7 @@ const BookCover = ({
   coverColor = "#012B48",
   coverImage = "https://placehold.co/400x600.png",
 }: Props) => {
+  const urlEndpoint = config.env.imagekit.urlEndpoint;
   return (
     <div
       className={cn(
@@ -40,11 +42,14 @@ const BookCover = ({
         className="absolute z-10"
         style={{ left: "12%", width: "87.5%", height: "88%" }}
       >
-        <Image
+        <IKImage
+          urlEndpoint={urlEndpoint}
           src={coverImage}
           alt="Book cover"
           fill
           className="rounded-sm object-fill"
+          loading="lazy"
+          lqip={{ active: true }}
         />
       </div>
     </div>
