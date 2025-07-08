@@ -17,7 +17,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
         <div className="auth-box">
           <div className="flex flex-row gap-3">
             <Image src="/icons/logo.svg" alt="logo" width={37} height={37} />
-            <h1 className="text-2xl font-semibold text-white">BookWise</h1>
+            <h1 className="text-2xl font-semibold text-white">Bookery</h1>
           </div>
           <ImageKitProvider urlEndpoint={config.env.imagekit.urlEndpoint}>
             <div>{children}</div>

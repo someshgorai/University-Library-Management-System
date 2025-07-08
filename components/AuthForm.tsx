@@ -21,11 +21,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import FileUpload from "@/components/FileUpload";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FIELD_NAMES, FIELD_TYPES } from "@/constants";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 
 interface Props<T extends FieldValues> {
   schema: ZodType<T>;
@@ -60,6 +61,16 @@ const AuthForm = <T extends FieldValues>({
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Countdown logic
+  useEffect(() => {
+    if (resendTimer === 0) return;
+    const interval = setInterval(() => {
+      setResendTimer((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
     setIsSubmitting(true);
@@ -68,9 +79,10 @@ const AuthForm = <T extends FieldValues>({
 
     if (result.success && result.otpSent && result.email) {
       toast.success("OTP sent to your official email.");
-      setUserEmail(result.email); // Why?
+      setUserEmail(result.email);
       setFormData(data);
       setStep("OTP");
+      setResendTimer(30);
     } else if (!result.success) {
       toast.error("Sign up failed", {
         description: result.error ?? "An error occurred.",
@@ -84,7 +96,7 @@ const AuthForm = <T extends FieldValues>({
     setIsVerifying(true);
     const res = await fetch("/api/verify-otp", {
       method: "POST",
-      body: JSON.stringify({ email: userEmail, otp }),
+      body: JSON.stringify({ email: userEmail, otp: otp.trim() }),
       headers: { "Content-Type": "application/json" },
     });
 
@@ -106,6 +118,24 @@ const AuthForm = <T extends FieldValues>({
           description: final.error ?? "Something went wrong",
         });
       }
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!formData) return;
+
+    setIsSubmitting(true);
+    const result = await onSubmit(formData);
+    setIsSubmitting(false);
+
+    if (result.success && result.otpSent && result.email) {
+      toast.success("OTP resent to your official email.");
+      setUserEmail(result.email);
+      setResendTimer(30);
+    } else {
+      toast.error("Failed to resend OTP", {
+        description: result.error ?? "An error occurred.",
+      });
     }
   };
 
@@ -192,21 +222,37 @@ const AuthForm = <T extends FieldValues>({
           <p className="text-light-100">
             Enter the 6-digit OTP sent to <strong>{userEmail}</strong>
           </p>
-          <Input
-            type="text"
-            placeholder="Enter OTP"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+
+          <InputOTP
             maxLength={6}
-            className="form-input"
-          />
+            value={otp}
+            onChange={setOtp}
+            className="mx-auto"
+          >
+            <InputOTPGroup>
+              {[...Array(6)].map((_, i) => (
+                <InputOTPSlot key={i} index={i} />
+              ))}
+            </InputOTPGroup>
+          </InputOTP>
+
           <Button
             onClick={handleOtpSubmit}
-            disabled={isVerifying}
+            disabled={isVerifying || otp.length !== 6}
             className="form-btn"
           >
             {isVerifying ? "Verifying..." : "Verify OTP"}
           </Button>
+
+          <Button
+            variant="ghost"
+            onClick={handleResendOtp}
+            disabled={resendTimer > 0 || isSubmitting}
+            className="text-sm text-primary"
+          >
+            {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : "Resend OTP"}
+          </Button>
+
           <Button variant="ghost" onClick={() => setStep("FORM")}>
             ← Back to Sign Up
           </Button>
@@ -227,4 +273,5 @@ const AuthForm = <T extends FieldValues>({
     </div>
   );
 };
+
 export default AuthForm;
