@@ -15,10 +15,13 @@ const Layout = async ({ children }: { children: ReactNode }) => {
     <main className="auth-container">
       <section className="auth-form">
         <div className="auth-box">
-          <div className="flex flex-row gap-3">
-            <Image src="/icons/logo.svg" alt="logo" width={37} height={37} />
-            <h1 className="text-2xl font-semibold text-white">Bookery</h1>
+          <div className="flex items-center gap-3">
+            <Image src="/icons/logo2.png" alt="logo" width={50} height={50} />
+            <h1 className="text-4xl font-semibold text-white whitespace-nowrap">
+              Bookery
+            </h1>
           </div>
+
           <ImageKitProvider urlEndpoint={config.env.imagekit.urlEndpoint}>
             <div>{children}</div>
             <Toaster />
@@ -28,7 +31,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
 
       <section className="auth-illustration">
         <Image
-          src="/images/auth-illustration.png"
+          src="/images/lms-auth.jpg"
           alt="auth illustration"
           height={1000}
           width={1000}

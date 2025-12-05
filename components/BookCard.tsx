@@ -1,18 +1,17 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import BookCover from "@/components/BookCover";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { borrowRecords } from "@/database/schema";
-import { db } from "@/database/drizzle";
-import { and, eq } from "drizzle-orm";
 
 interface Props extends Book {
   userId: string;
 }
 
-const BookCard = async ({
+const BookCard = ({
   id,
   title,
   genre,
@@ -20,45 +19,46 @@ const BookCard = async ({
   coverUrl,
   userId,
 }: Props) => {
-  if (!userId) return null;
-  const result = await db
-    .select({
-      dueDate: borrowRecords.dueDate,
-    })
-    .from(borrowRecords)
-    .where(
-      and(
-        eq(borrowRecords.bookId, id),
-        eq(borrowRecords.userId, userId),
-        eq(borrowRecords.status, "BORROWED"),
-      ),
-    )
-    .limit(1);
+  const [loanRecord, setLoanRecord] = useState<any | null>(null);
+  const [dueText, setDueText] = useState<string>("");
+  const [textClass, setTextClass] = useState<string>("text-light-100");
 
-  const loanRecord = result[0];
-  let remainingDays: number | null = null;
-  let dueText = "";
-  let textClass = "text-light-100";
+  useEffect(() => {
+    const fetchDue = async () => {
+      try {
+        const res = await fetch(
+          `/api/user-loan-status?userId=${userId}&bookId=${id}`,
+        );
+        const data = await res.json();
+        const record = data[0];
+        setLoanRecord(record);
 
-  if (loanRecord) {
-    const due = new Date(loanRecord.dueDate);
-    const today = new Date();
-    due.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
+        if (record) {
+          const due = new Date(record.dueDate);
+          const today = new Date();
+          due.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
 
-    const diffTime = due.getTime() - today.getTime();
-    remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const diffTime = due.getTime() - today.getTime();
+          const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const absDays = Math.abs(remainingDays);
-    const dayWord = absDays === 1 ? "day" : "days";
+          const absDays = Math.abs(remainingDays);
+          const dayWord = absDays === 1 ? "day" : "days";
 
-    if (remainingDays >= 0) {
-      dueText = `${remainingDays} ${dayWord} left to return`;
-    } else {
-      dueText = `Overdue by ${absDays} ${dayWord}`;
-      textClass = "text-red-500 font-semibold";
-    }
-  }
+          if (remainingDays >= 0) {
+            setDueText(`${remainingDays} ${dayWord} left to return`);
+          } else {
+            setDueText(`Overdue by ${absDays} ${dayWord}`);
+            setTextClass("text-red-500 font-semibold");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching loan status", error);
+      }
+    };
+
+    if (userId) fetchDue();
+  }, [userId, id]);
 
   return (
     <li className={cn(!!loanRecord && "xs:w-52 w-full")}>
@@ -73,7 +73,7 @@ const BookCard = async ({
           <p className="book-genre">{genre}</p>
         </div>
 
-        {!!loanRecord && remainingDays !== null && (
+        {!!loanRecord && dueText && (
           <div className="mt-3 w-full">
             <div className="book-loaned flex items-center gap-2">
               <Image

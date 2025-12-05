@@ -13,7 +13,7 @@ const Page = async () => {
 
   if (!session || !userId) redirect("/sign-in");
 
-  const borrowedBooks = await db
+  const borrowedBooks = (await db
     .select({
       id: books.id,
       title: books.title,
@@ -29,7 +29,7 @@ const Page = async () => {
         eq(borrowRecords.userId, userId),
         eq(borrowRecords.status, "BORROWED"),
       ),
-    );
+    )) as Book[];
 
   return (
     <div>

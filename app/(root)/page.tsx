@@ -1,7 +1,7 @@
 import BookOverview from "@/components/BookOverview";
 import BookList from "@/components/BookList";
 import { db } from "@/database/drizzle";
-import { books, borrowRecords } from "@/database/schema";
+import { books } from "@/database/schema";
 import { desc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 
