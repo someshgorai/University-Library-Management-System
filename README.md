@@ -85,8 +85,6 @@ Email (Resend)
 
 Auth / Security
 - `PASSWORD_SALT_ROUNDS` — Number of bcrypt salt rounds for password hashing
-- TODO: NextAuth requires a secret in production (`AUTH_SECRET`). Define this before deploying.
-
 Notes
 - `drizzle.config.ts` loads `.env.local` to access `DATABASE_URL` for generate/migrate commands.
 - `next.config.ts` allows external images from `placehold.co`, `m.media-amazon.com`, and `ik.imagekit.io`.
@@ -148,18 +146,9 @@ npm run lint
 
 ---
 
-### Tests
-No automated tests are configured yet. TODO:
-- Add a testing framework (e.g., Vitest or Jest + React Testing Library)
-- Set up basic unit/integration tests for critical modules (auth, actions, API routes)
-
----
-
 ### Deployment
 - This is a standard Next.js application. It can be deployed to platforms that support Node.js servers (e.g., Vercel, Render, Fly.io, AWS, etc.).
 - Image domains must be allowed in `next.config.ts`.
-- TODO: Confirm deployment target and add provider-specific steps (including required env vars like `AUTH_SECRET`).
-
 ---
 
 ### Additional Resources
